@@ -1,0 +1,118 @@
+/**
+ * Sample React Native App
+ * https://github.com/facebook/react-native
+ * @flow
+ */
+
+import React, { Component } from 'react';
+import {
+  AppRegistry,
+  StyleSheet,
+  Text,
+  View,
+  ListView,
+  Alert
+} from 'react-native';
+import * as firebase from 'firebase'
+
+import ActionButton from './components/ActionButton.js'
+import GroceryItem from './components/GroceryItem.js'
+import Title from './components/Title.js'
+import Prompt from 'react-native-prompt';
+
+
+
+const config = {
+  apiKey: "AIzaSyAyN8YCIweEzP-gzr-ZGTxeyIsshPa3GB0",
+  authDomain: "reactnative-e1ae6.firebaseapp.com",
+  databaseURL: "https://reactnative-e1ae6.firebaseio.com",
+  storageBucket: "reactnative-e1ae6.appspot.com",
+  messagingSenderId: "318927502684"
+}
+const firebaseApp = firebase.initializeApp(config)
+
+
+export default class firebasereact extends Component {
+  constructor(props) {
+    super(props)
+    this.state = {
+      dataSource: new ListView.DataSource({
+        rowHasChanged: (row1, row2) => row1 !== row2
+      })
+    }
+    this.itemsRef = this.getRef().child('items')
+  }
+
+  getRef() {
+    return firebaseApp.database().ref()
+  }
+
+  listenForItems(itemsRef){
+    itemsRef.on('value',(fbItem)=>{
+        let items = []
+        fbItem.forEach((item)=> {
+          items.push({
+            title:item.val().title,
+            _key:item.key
+          })
+        })
+        this.setState({
+          dataSource:this.state.dataSource.cloneWithRows(items)
+        })
+    })
+  }
+
+    componentDidMount() {
+
+        this.listenForItems(this.itemsRef)
+
+    }
+    _addItem(){
+
+    Alert.alert(
+        'Add New Item',null,
+        [
+          {text:"Save", onPress : (text) => this.itemsRef.push({title:text})}
+        ]
+      )
+    }
+
+  _renderItem(item) {
+    return (
+        <GroceryItem item={item} />
+    )
+  }
+
+  render() {
+    return (
+      <View style={styles.container}>
+        <Title title="Daftar Belanja" />
+        <ListView dataSource={this.state.dataSource}
+          renderRow={this._renderItem.bind(this)} />
+        <ActionButton title="Add" onPress= {this._addItem.bind(this)}/>
+      </View>
+    );
+  }
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F5FCFF',
+    paddingTop: 50
+  },
+  welcome: {
+    fontSize: 20,
+    textAlign: 'center',
+    margin: 10,
+  },
+  instructions: {
+    textAlign: 'center',
+    color: '#333333',
+    marginBottom: 5,
+  },
+});
+
+AppRegistry.registerComponent('firebasereact', () => firebasereact);
